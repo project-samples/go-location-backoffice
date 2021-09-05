@@ -1,0 +1,73 @@
+[{
+  "_id": "5d146cbffbdf2b1d30742262",
+  "type": "coffee",
+  "name": "Highland Coffee",
+  "description": "Highland Coffee",
+  "geo": {
+    "type": "Point",
+    "coordinates": [
+      106.62435293197633,
+      10.852848365357607
+    ]
+  }
+}, {
+  "_id": "5d1d7a18c5e4f320a86ca6b1",
+  "type": "coffee",
+  "name": "Trung Nguyen Coffee",
+  "description": "Trung Nguyen Coffee",
+  "geo": {
+    "type": "Point",
+    "coordinates": [
+      106.631039,
+      10.855858
+    ]
+  }
+}, {
+  "_id": "5d1d7a66c5e4f320a86ca6b2",
+  "type": "coffee",
+  "name": "The Coffee House",
+  "description": "The Coffee House",
+  "geo": {
+    "type": "Point",
+    "coordinates": [
+      106.630691,
+      10.855842
+    ]
+  }
+}, {
+  "_id": "5d1d7a85c5e4f320a86ca6b3",
+  "type": "coffee",
+  "name": "Starbuck Coffee",
+  "description": "Starbuck Coffee",
+  "geo": {
+    "type": "Point",
+    "coordinates": [
+      106.631495,
+      10.854809
+    ]
+  }
+}, {
+  "_id": "5d1d7b79c5e4f320a86ca6b4",
+  "type": "coffee",
+  "name": "King Coffee",
+  "description": "farthest",
+  "geo": {
+    "type": "Point",
+    "coordinates": [
+      106.624183,
+      10.855761
+    ]
+  }
+}, {
+  "_id": "5d1efb3796988a127077547c",
+  "type": "restaurant",
+  "name": "Restaurant",
+  "description": "farthest",
+  "geo": {
+    "type": "Point",
+    "coordinates": [
+      106.624169,
+      10.855769
+    ]
+  }
+}]
