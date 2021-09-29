@@ -1,49 +1,55 @@
 [
   {
     "id": "5d146cbffbdf2b1d30742262",
-    "type": "coffee",
     "name": "Highland Coffee",
     "description": "Highland Coffee",
+    "type": "coffee",
+    "imageURL": "https://thumbs.dreamstime.com/z/highlands-coffee-shop-vung-tau-vietnam-jan-facade-vietnamese-chain-producer-distributor-86167986.jpg",
     "latitude": 106.62435293197633,
     "longitude": 10.852848365357607
   },
   {
     "id": "5d1d7a18c5e4f320a86ca6b1",
-    "type": "coffee",
     "name": "Trung Nguyen Coffee",
     "description": "Trung Nguyen Coffee",
+    "type": "coffee",
+    "imageURL": "https://cdn2.shopify.com/s/files/1/0065/6759/1999/files/dia-chi-trung-nguyen-legend-cafe-tai-vincom-ha-nam_grande.jpg",
     "latitude": 106.631039,
     "longitude": 10.855858
   },
   {
     "id": "5d1d7a66c5e4f320a86ca6b2",
-    "type": "coffee",
     "name": "The Coffee House",
     "description": "The Coffee House",
+    "type": "coffee",
+    "imageURL": "https://vietnaminsider.vn/wp-content/uploads/2019/06/bai-hoc-khoi-nghiep-the-coffee-house.jpg",
     "latitude": 106.630691,
     "longitude": 10.855842
   },
   {
     "id": "5d1d7a85c5e4f320a86ca6b3",
+    "name": "Starbucks Coffee",
+    "description": "Starbucks Coffee",
     "type": "coffee",
-    "name": "Starbuck Coffee",
-    "description": "Starbuck Coffee",
+    "imageURL": "https://ichef.bbci.co.uk/news/976/cpsprodpb/17185/production/_118879549_gettyimages-1308703596.jpg",
     "latitude": 106.631495,
     "longitude": 10.854809
   },
   {
     "id": "5d1d7b79c5e4f320a86ca6b4",
-    "type": "coffee",
     "name": "King Coffee",
     "description": "farthest",
+    "type": "coffee",
+    "imageURL": "https://www.asia-bars.com/wp-content/uploads/2015/11/cong-caphe-1.jpg",
     "latitude": 106.624183,
     "longitude": 10.855761
   },
   {
     "id": "5d1efb3796988a127077547c",
-    "type": "restaurant",
-    "name": "Restaurant",
+    "name": "Sumo BBQ Restaurant",
     "description": "farthest",
+    "type": "restaurant",
+    "imageURL": "https://135525-391882-2-raikfcquaxqncofqfm.stackpathdns.com/wp-content/uploads/2021/04/Summo-BBQ-1280x960.jpeg",
     "latitude": 106.624169,
     "longitude": 10.855769
   }
