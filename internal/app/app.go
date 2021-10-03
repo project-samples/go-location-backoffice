@@ -11,6 +11,7 @@ import (
 	"go-service/internal/bookable"
 	"go-service/internal/event"
 	"go-service/internal/location"
+	"go-service/internal/tour"
 )
 
 type ApplicationContext struct {
@@ -18,6 +19,7 @@ type ApplicationContext struct {
 	LocationHandler *location.LocationHandler
 	EventHandler    *event.EventHandler
 	BookableHandler *bookable.BookableHandler
+	TourHandler     *tour.TourHandler
 }
 
 func NewApp(ctx context.Context, mongoConfig mongo.MongoConfig) (*ApplicationContext, error) {
@@ -37,12 +39,14 @@ func NewApp(ctx context.Context, mongoConfig mongo.MongoConfig) (*ApplicationCon
 	eventHandler := event.NewEventHandler(eventService, Generate, validator.Validate, logError)
 	bookableService := bookable.NewBookableService(db)
 	bookableHandler := bookable.NewBookableHandler(bookableService, Generate, validator.Validate, logError)
-
+	tourService := tour.NewTourService(db)
+	tourHandler := tour.NewTourHandler(tourService, Generate, validator.Validate, logError)
 	return &ApplicationContext{
 		HealthHandler:   healthHandler,
 		LocationHandler: locationHandler,
 		EventHandler:    eventHandler,
 		BookableHandler: bookableHandler,
+		TourHandler:     tourHandler,
 	}, nil
 }
 

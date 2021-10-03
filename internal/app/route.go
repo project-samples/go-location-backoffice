@@ -44,5 +44,15 @@ func Route(r *mux.Router, ctx context.Context, mongoConfig mongo.MongoConfig) er
 	r.HandleFunc(bookablePath+"/{id}", bookable.Update).Methods(PUT)
 	r.HandleFunc(bookablePath+"/{id}", bookable.Patch).Methods(PATCH)
 	r.HandleFunc(bookablePath+"/{id}", bookable.Delete).Methods(DELETE)
+
+	tourPath := "/tours"
+	tour := app.BookableHandler
+	r.HandleFunc(tourPath, tour.GetAll).Methods(GET)
+	r.HandleFunc(tourPath+"/search", tour.Search).Methods(GET, POST)
+	r.HandleFunc(tourPath+"/{id}", tour.Load).Methods(GET)
+	r.HandleFunc(tourPath, tour.Create).Methods(POST)
+	r.HandleFunc(tourPath+"/{id}", tour.Update).Methods(PUT)
+	r.HandleFunc(tourPath+"/{id}", tour.Patch).Methods(PATCH)
+	r.HandleFunc(tourPath+"/{id}", tour.Delete).Methods(DELETE)
 	return nil
 }
