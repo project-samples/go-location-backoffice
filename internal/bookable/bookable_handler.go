@@ -18,10 +18,10 @@ type BookableHandler struct {
 
 func NewBookableHandler(bookableService BookableService, generateId func(context.Context) (string, error), validate func(context.Context, interface{}) ([]sv.ErrorMessage, error), logError func(context.Context, string)) *BookableHandler {
 	modelType := reflect.TypeOf(Bookable{})
-	searchModelType := reflect.TypeOf(BookableSM{})
+	searchModelType := reflect.TypeOf(BookableFilter{})
 	modelBuilder := builder.NewDefaultModelBuilder(generateId, modelType, "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "userId")
 	searchHandler := search.NewSearchHandler(bookableService.Search, modelType, searchModelType, logError, nil)
-	genericHandler := sv.NewGenericHandler(bookableService, modelType, modelBuilder, logError, validate)
+	genericHandler := sv.NewHandler(bookableService, modelType, modelBuilder, logError, validate)
 	return &BookableHandler{GenericHandler: genericHandler, SearchHandler: searchHandler, Service: bookableService}
 }
 

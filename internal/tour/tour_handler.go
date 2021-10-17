@@ -18,10 +18,10 @@ type TourHandler struct {
 
 func NewTourHandler(tourService TourService, generateId func(context.Context) (string, error), validate func(context.Context, interface{}) ([]sv.ErrorMessage, error), logError func(context.Context, string)) *TourHandler {
 	modelType := reflect.TypeOf(Tour{})
-	searchModelType := reflect.TypeOf(TourSM{})
+	searchModelType := reflect.TypeOf(TourFilter{})
 	modelBuilder := builder.NewDefaultModelBuilder(generateId, modelType, "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "userId")
 	searchHandler := search.NewSearchHandler(tourService.Search, modelType, searchModelType, logError, nil)
-	genericHandler := sv.NewGenericHandler(tourService, modelType, modelBuilder, logError, validate)
+	genericHandler := sv.NewHandler(tourService, modelType, modelBuilder, logError, validate)
 	return &TourHandler{GenericHandler: genericHandler, SearchHandler: searchHandler, Service: tourService}
 }
 
