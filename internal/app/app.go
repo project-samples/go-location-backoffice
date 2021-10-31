@@ -22,9 +22,9 @@ import (
 type ApplicationContext struct {
 	HealthHandler   *health.Handler
 	LocationHandler location.LocationHandler
-	EventHandler    *event.EventHandler
-	BookableHandler *bookable.BookableHandler
-	TourHandler     *tour.TourHandler
+	EventHandler    event.EventHandler
+	BookableHandler bookable.BookableHandler
+	TourHandler     tour.TourHandler
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -46,14 +46,32 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	locationSearchBuilder := mongo.NewSearchBuilder(db, "location", locationQueryBuilder.BuildQuery, search.GetSort, locationMapper.DbToModel)
 	locationRepository := mongo.NewRepository(db, "location", locationType, locationMapper)
 	locationService := location.NewLocationService(locationRepository)
-	locationHandler := location.NewLocationHandler(locationSearchBuilder.Search, locationService, status, logError, validator.Validate, &action)
+	locationHandler := location.NewLocationHandler(locationSearchBuilder.Search, locationService, Generate, status, logError, validator.Validate, root.Tracking, &action, nil)
 
-	eventService := event.NewEventService(db)
-	eventHandler := event.NewEventHandler(eventService, Generate, validator.Validate, logError)
-	bookableService := bookable.NewBookableService(db)
-	bookableHandler := bookable.NewBookableHandler(bookableService, Generate, validator.Validate, logError)
-	tourService := tour.NewTourService(db)
-	tourHandler := tour.NewTourHandler(tourService, Generate, validator.Validate, logError)
+	eventType := reflect.TypeOf(event.Event{})
+	eventMapper := geo.NewMapper(eventType)
+	eventQueryBuilder := query.NewBuilder(eventType)
+	eventSearchBuilder := mongo.NewSearchBuilder(db, "event", eventQueryBuilder.BuildQuery, search.GetSort, eventMapper.DbToModel)
+	eventRepository := mongo.NewRepository(db, "event", eventType, eventMapper)
+	eventService := event.NewEventService(eventRepository)
+	eventHandler := event.NewEventHandler(eventSearchBuilder.Search, eventService, Generate, status, logError, validator.Validate, root.Tracking, &action, nil)
+
+	bookableType := reflect.TypeOf(bookable.Bookable{})
+	bookableMapper := geo.NewMapper(bookableType)
+	bookableQueryBuilder := query.NewBuilder(bookableType)
+	bookableSearchBuilder := mongo.NewSearchBuilder(db, "bookable", bookableQueryBuilder.BuildQuery, search.GetSort, bookableMapper.DbToModel)
+	bookableRepository := mongo.NewRepository(db, "bookable", bookableType, bookableMapper)
+	bookableService := bookable.NewBookableService(bookableRepository)
+	bookableHandler := bookable.NewBookableHandler(bookableSearchBuilder.Search, bookableService, Generate, status, logError, validator.Validate, root.Tracking, &action, nil)
+
+	tourType := reflect.TypeOf(tour.Tour{})
+	tourMapper := geo.NewMapper(tourType)
+	tourQueryBuilder := query.NewBuilder(tourType)
+	tourSearchBuilder := mongo.NewSearchBuilder(db, "tour", tourQueryBuilder.BuildQuery, search.GetSort, tourMapper.DbToModel)
+	tourRepository := mongo.NewRepository(db, "tour", tourType, tourMapper)
+	tourService := tour.NewTourService(tourRepository)
+	tourHandler := tour.NewTourHandler(tourSearchBuilder.Search, tourService, Generate, status, logError, validator.Validate, root.Tracking, &action, nil)
+
 	return &ApplicationContext{
 		HealthHandler:   healthHandler,
 		LocationHandler: locationHandler,

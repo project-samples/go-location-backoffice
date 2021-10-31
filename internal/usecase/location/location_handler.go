@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/core-go/search"
 	sv "github.com/core-go/service"
+	"github.com/core-go/service/builder"
 	"net/http"
 	"reflect"
 )
@@ -17,16 +18,19 @@ type LocationHandler interface {
 	Delete(w http.ResponseWriter, r *http.Request)
 }
 
-func NewLocationHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service LocationService, status sv.StatusConfig, logError func(context.Context, string), validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error), action *sv.ActionConfig) LocationHandler {
+func NewLocationHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service LocationService, generateId func(context.Context) (string, error), status sv.StatusConfig, logError func(context.Context, string), validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error), tracking builder.TrackingConfig, action *sv.ActionConfig, writeLog func(context.Context, string, string, bool, string) error) LocationHandler {
 	searchModelType := reflect.TypeOf(LocationFilter{})
 	modelType := reflect.TypeOf(Location{})
-	params := sv.CreateParams(modelType, &status, logError, validate, action)
+	builder := builder.NewBuilderWithIdAndConfig(generateId, modelType, tracking)
+	patchHandler, params := sv.CreatePatchAndParams(modelType, &status, logError, service.Patch, validate, builder.Patch, action, writeLog)
 	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, params.Log)
-	return &locationHandler{service: service, SearchHandler: searchHandler, Params: params}
+	return &locationHandler{service: service, builder: builder, PatchHandler: patchHandler, SearchHandler: searchHandler, Params: params}
 }
 
 type locationHandler struct {
 	service LocationService
+	builder sv.Builder
+	*sv.PatchHandler
 	*search.SearchHandler
 	*sv.Params
 }
@@ -40,7 +44,7 @@ func (h *locationHandler) Load(w http.ResponseWriter, r *http.Request) {
 }
 func (h *locationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var location Location
-	er1 := sv.Decode(w, r, &location)
+	er1 := sv.Decode(w, r, &location, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.Validate(r.Context(), &location)
 		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Create) {
@@ -51,23 +55,12 @@ func (h *locationHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 func (h *locationHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var location Location
-	er1 := sv.DecodeAndCheckId(w, r, &location, h.Keys, h.Indexes)
+	er1 := sv.DecodeAndCheckId(w, r, &location, h.Keys, h.Indexes, h.builder.Update)
 	if er1 == nil {
 		errors, er2 := h.Validate(r.Context(), &location)
 		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Update) {
 			result, er3 := h.service.Update(r.Context(), &location)
 			sv.HandleResult(w, r, &location, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Update)
-		}
-	}
-}
-func (h *locationHandler) Patch(w http.ResponseWriter, r *http.Request) {
-	var location Location
-	r, json, er1 := sv.BuildMapAndCheckId(w, r, &location, h.Keys, h.Indexes)
-	if er1 == nil {
-		errors, er2 := h.Validate(r.Context(), &location)
-		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Patch) {
-			result, er3 := h.service.Patch(r.Context(), json)
-			sv.HandleResult(w, r, json, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Patch)
 		}
 	}
 }

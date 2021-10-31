@@ -1,32 +1,45 @@
 package bookable
 
 import (
-	"reflect"
+	"context"
 
-	mgo "github.com/core-go/mongo"
-	"github.com/core-go/mongo/geo"
-	"github.com/core-go/mongo/query"
-	"github.com/core-go/search"
-	"github.com/core-go/service"
-	"go.mongodb.org/mongo-driver/mongo"
+	sv "github.com/core-go/service"
 )
 
 type BookableService interface {
-	search.SearchService
-	service.GenericService
+	Load(ctx context.Context, id string) (*Bookable, error)
+	Create(ctx context.Context, Bookable *Bookable) (int64, error)
+	Update(ctx context.Context, Bookable *Bookable) (int64, error)
+	Patch(ctx context.Context, Bookable map[string]interface{}) (int64, error)
+	Delete(ctx context.Context, id string) (int64, error)
 }
 
-type MongoBookableService struct {
-	search.SearchService
-	service.GenericService
-	Mapper mgo.Mapper
+func NewBookableService(repository sv.Repository) BookableService {
+	return &bookableService{repository: repository}
 }
 
-func NewBookableService(db *mongo.Database) *MongoBookableService {
-	var model Bookable
-	modelType := reflect.TypeOf(model)
-	mapper := geo.NewMapper(modelType)
-	queryBuilder := query.NewBuilder(modelType)
-	searchService, genericService := mgo.NewSearchWriter(db, "bookable", modelType, queryBuilder.BuildQuery, search.GetSort, mapper)
-	return &MongoBookableService{SearchService: searchService, GenericService: genericService, Mapper: mapper}
+type bookableService struct {
+	repository sv.Repository
+}
+
+func (s *bookableService) Load(ctx context.Context, id string) (*Bookable, error) {
+	var Bookable Bookable
+	ok, err := s.repository.LoadAndDecode(ctx, id, &Bookable)
+	if !ok {
+		return nil, err
+	} else {
+		return &Bookable, err
+	}
+}
+func (s *bookableService) Create(ctx context.Context, Bookable *Bookable) (int64, error) {
+	return s.repository.Insert(ctx, Bookable)
+}
+func (s *bookableService) Update(ctx context.Context, Bookable *Bookable) (int64, error) {
+	return s.repository.Update(ctx, Bookable)
+}
+func (s *bookableService) Patch(ctx context.Context, Bookable map[string]interface{}) (int64, error) {
+	return s.repository.Patch(ctx, Bookable)
+}
+func (s *bookableService) Delete(ctx context.Context, id string) (int64, error) {
+	return s.repository.Delete(ctx, id)
 }

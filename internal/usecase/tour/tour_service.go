@@ -1,29 +1,45 @@
 package tour
 
 import (
-	"reflect"
+	"context"
 
-	mgo "github.com/core-go/mongo"
-	"github.com/core-go/mongo/query"
-	"github.com/core-go/search"
-	"github.com/core-go/service"
-	"go.mongodb.org/mongo-driver/mongo"
+	sv "github.com/core-go/service"
 )
 
 type TourService interface {
-	search.SearchService
-	service.GenericService
+	Load(ctx context.Context, id string) (*Tour, error)
+	Create(ctx context.Context, Tour *Tour) (int64, error)
+	Update(ctx context.Context, Tour *Tour) (int64, error)
+	Patch(ctx context.Context, Tour map[string]interface{}) (int64, error)
+	Delete(ctx context.Context, id string) (int64, error)
 }
 
-type MongoTourService struct {
-	search.SearchService
-	service.GenericService
+func NewTourService(repository sv.Repository) TourService {
+	return &tourService{repository: repository}
 }
 
-func NewTourService(db *mongo.Database) *MongoTourService {
-	var model Tour
-	modelType := reflect.TypeOf(model)
-	queryBuilder := query.NewBuilder(modelType)
-	searchService, genericService := mgo.NewSearchWriter(db, "tour", modelType, queryBuilder.BuildQuery, search.GetSort)
-	return &MongoTourService{SearchService: searchService, GenericService: genericService}
+type tourService struct {
+	repository sv.Repository
+}
+
+func (s *tourService) Load(ctx context.Context, id string) (*Tour, error) {
+	var Tour Tour
+	ok, err := s.repository.LoadAndDecode(ctx, id, &Tour)
+	if !ok {
+		return nil, err
+	} else {
+		return &Tour, err
+	}
+}
+func (s *tourService) Create(ctx context.Context, Tour *Tour) (int64, error) {
+	return s.repository.Insert(ctx, Tour)
+}
+func (s *tourService) Update(ctx context.Context, Tour *Tour) (int64, error) {
+	return s.repository.Update(ctx, Tour)
+}
+func (s *tourService) Patch(ctx context.Context, Tour map[string]interface{}) (int64, error) {
+	return s.repository.Patch(ctx, Tour)
+}
+func (s *tourService) Delete(ctx context.Context, id string) (int64, error) {
+	return s.repository.Delete(ctx, id)
 }

@@ -26,7 +26,7 @@ func Route(r *mux.Router, ctx context.Context, root Root) error {
 
 	eventPath := "/events"
 	event := app.EventHandler
-	r.HandleFunc(eventPath, event.GetAll).Methods(GET)
+	// r.HandleFunc(eventPath, event.GetAll).Methods(GET)
 	r.HandleFunc(eventPath+"/search", event.Search).Methods(GET, POST)
 	r.HandleFunc(eventPath+"/{id}", event.Load).Methods(GET)
 	r.HandleFunc(eventPath, event.Create).Methods(POST)
@@ -36,7 +36,7 @@ func Route(r *mux.Router, ctx context.Context, root Root) error {
 
 	bookablePath := "/bookables"
 	bookable := app.BookableHandler
-	r.HandleFunc(bookablePath, bookable.GetAll).Methods(GET)
+	// r.HandleFunc(bookablePath, bookable.GetAll).Methods(GET)
 	r.HandleFunc(bookablePath+"/search", bookable.Search).Methods(GET, POST)
 	r.HandleFunc(bookablePath+"/{id}", bookable.Load).Methods(GET)
 	r.HandleFunc(bookablePath, bookable.Create).Methods(POST)
@@ -46,7 +46,7 @@ func Route(r *mux.Router, ctx context.Context, root Root) error {
 
 	tourPath := "/tours"
 	tour := app.BookableHandler
-	r.HandleFunc(tourPath, tour.GetAll).Methods(GET)
+	// r.HandleFunc(tourPath, tour.GetAll).Methods(GET)
 	r.HandleFunc(tourPath+"/search", tour.Search).Methods(GET, POST)
 	r.HandleFunc(tourPath+"/{id}", tour.Load).Methods(GET)
 	r.HandleFunc(tourPath, tour.Create).Methods(POST)
