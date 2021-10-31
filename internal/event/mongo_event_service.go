@@ -11,6 +11,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type EventService interface {
+	search.SearchService
+	service.GenericService
+}
+
 type MongoEventService struct {
 	search.SearchService
 	service.GenericService

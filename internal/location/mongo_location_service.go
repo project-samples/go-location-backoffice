@@ -11,6 +11,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type LocationService interface {
+	search.SearchService
+	service.GenericService
+}
+
 type MongoLocationService struct {
 	search.SearchService
 	service.GenericService
