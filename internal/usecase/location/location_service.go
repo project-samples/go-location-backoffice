@@ -1,32 +1,45 @@
 package location
 
 import (
-	"reflect"
+	"context"
 
-	mgo "github.com/core-go/mongo"
-	"github.com/core-go/mongo/geo"
-	"github.com/core-go/mongo/query"
-	"github.com/core-go/search"
-	"github.com/core-go/service"
-	"go.mongodb.org/mongo-driver/mongo"
+	sv "github.com/core-go/service"
 )
 
 type LocationService interface {
-	search.SearchService
-	service.GenericService
+	Load(ctx context.Context, id string) (*Location, error)
+	Create(ctx context.Context, Location *Location) (int64, error)
+	Update(ctx context.Context, Location *Location) (int64, error)
+	Patch(ctx context.Context, Location map[string]interface{}) (int64, error)
+	Delete(ctx context.Context, id string) (int64, error)
 }
 
-type MongoLocationService struct {
-	search.SearchService
-	service.GenericService
-	Mapper mgo.Mapper
+func NewLocationService(repository sv.Repository) LocationService {
+	return &locationService{repository: repository}
 }
 
-func NewLocationService(db *mongo.Database) *MongoLocationService {
-	var model Location
-	modelType := reflect.TypeOf(model)
-	mapper := geo.NewMapper(modelType)
-	queryBuilder := query.NewBuilder(modelType)
-	searchService, genericService := mgo.NewSearchWriter(db, "location", modelType, queryBuilder.BuildQuery, search.GetSort, mapper)
-	return &MongoLocationService{SearchService: searchService, GenericService: genericService, Mapper: mapper}
+type locationService struct {
+	repository sv.Repository
+}
+
+func (s *locationService) Load(ctx context.Context, id string) (*Location, error) {
+	var Location Location
+	ok, err := s.repository.LoadAndDecode(ctx, id, &Location)
+	if !ok {
+		return nil, err
+	} else {
+		return &Location, err
+	}
+}
+func (s *locationService) Create(ctx context.Context, Location *Location) (int64, error) {
+	return s.repository.Insert(ctx, Location)
+}
+func (s *locationService) Update(ctx context.Context, Location *Location) (int64, error) {
+	return s.repository.Update(ctx, Location)
+}
+func (s *locationService) Patch(ctx context.Context, Location map[string]interface{}) (int64, error) {
+	return s.repository.Patch(ctx, Location)
+}
+func (s *locationService) Delete(ctx context.Context, id string) (int64, error) {
+	return s.repository.Delete(ctx, id)
 }

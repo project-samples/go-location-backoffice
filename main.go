@@ -30,7 +30,7 @@ func main() {
 	}
 	r.Use(mid.Recover(log.ErrorMsg))
 
-	er2 := app.Route(r, context.Background(), conf.Mongo)
+	er2 := app.Route(r, context.Background(), conf)
 	if er2 != nil {
 		panic(er2)
 	}

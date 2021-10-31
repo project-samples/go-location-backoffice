@@ -2,13 +2,12 @@ package app
 
 import (
 	"context"
-	"github.com/core-go/mongo"
 	. "github.com/core-go/service"
 	"github.com/gorilla/mux"
 )
 
-func Route(r *mux.Router, ctx context.Context, mongoConfig mongo.MongoConfig) error {
-	app, err := NewApp(ctx, mongoConfig)
+func Route(r *mux.Router, ctx context.Context, root Root) error {
+	app, err := NewApp(ctx, root)
 	if err != nil {
 		return err
 	}
@@ -17,7 +16,7 @@ func Route(r *mux.Router, ctx context.Context, mongoConfig mongo.MongoConfig) er
 
 	locationPath := "/locations"
 	location := app.LocationHandler
-	r.HandleFunc(locationPath, location.GetAll).Methods(GET)
+	// r.HandleFunc(locationPath, location.GetAll).Methods(GET)
 	r.HandleFunc(locationPath+"/search", location.Search).Methods(GET, POST)
 	r.HandleFunc(locationPath+"/{id}", location.Load).Methods(GET)
 	r.HandleFunc(locationPath, location.Create).Methods(POST)

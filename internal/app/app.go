@@ -5,8 +5,13 @@ import (
 	"github.com/core-go/health"
 	"github.com/core-go/log"
 	"github.com/core-go/mongo"
-	sv "github.com/core-go/service/v10"
+	"github.com/core-go/mongo/geo"
+	"github.com/core-go/mongo/query"
+	"github.com/core-go/search"
+	sv "github.com/core-go/service"
+	v "github.com/core-go/service/v10"
 	"github.com/teris-io/shortid"
+	"reflect"
 
 	"go-service/internal/usecase/bookable"
 	"go-service/internal/usecase/event"
@@ -16,25 +21,33 @@ import (
 
 type ApplicationContext struct {
 	HealthHandler   *health.Handler
-	LocationHandler *location.LocationHandler
+	LocationHandler location.LocationHandler
 	EventHandler    *event.EventHandler
 	BookableHandler *bookable.BookableHandler
 	TourHandler     *tour.TourHandler
 }
 
-func NewApp(ctx context.Context, mongoConfig mongo.MongoConfig) (*ApplicationContext, error) {
-	db, err := mongo.Setup(ctx, mongoConfig)
+func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
+	db, err := mongo.Setup(ctx, root.Mongo)
 	if err != nil {
 		return nil, err
 	}
 	logError := log.ErrorMsg
+	status := sv.InitializeStatus(root.Status)
+	action := sv.InitializeAction(root.Action)
+	validator := v.NewValidator()
 
 	mongoChecker := mongo.NewHealthChecker(db)
 	healthHandler := health.NewHandler(mongoChecker)
-	validator := sv.NewValidator()
 
-	locationService := location.NewLocationService(db)
-	locationHandler := location.NewLocationHandler(locationService, Generate, validator.Validate, logError)
+	locationType := reflect.TypeOf(location.Location{})
+	locationMapper := geo.NewMapper(locationType)
+	locationQueryBuilder := query.NewBuilder(locationType)
+	locationSearchBuilder := mongo.NewSearchBuilder(db, "location", locationQueryBuilder.BuildQuery, search.GetSort, locationMapper.DbToModel)
+	locationRepository := mongo.NewRepository(db, "location", locationType, locationMapper)
+	locationService := location.NewLocationService(locationRepository)
+	locationHandler := location.NewLocationHandler(locationSearchBuilder.Search, locationService, status, logError, validator.Validate, &action)
+
 	eventService := event.NewEventService(db)
 	eventHandler := event.NewEventHandler(eventService, Generate, validator.Validate, logError)
 	bookableService := bookable.NewBookableService(db)

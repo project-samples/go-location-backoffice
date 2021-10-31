@@ -4,12 +4,14 @@ import (
 	"github.com/core-go/log"
 	mid "github.com/core-go/log/middleware"
 	"github.com/core-go/mongo"
-	"github.com/core-go/service"
+	sv "github.com/core-go/service"
 )
 
 type Root struct {
-	Server     service.ServerConf `mapstructure:"server"`
-	Mongo      mongo.MongoConfig  `mapstructure:"mongo"`
-	Log        log.Config         `mapstructure:"log"`
-	MiddleWare mid.LogConfig      `mapstructure:"middleware"`
+	Server     sv.ServerConf     `mapstructure:"server"`
+	Mongo      mongo.MongoConfig `mapstructure:"mongo"`
+	Log        log.Config        `mapstructure:"log"`
+	MiddleWare mid.LogConfig     `mapstructure:"middleware"`
+	Status     *sv.StatusConfig  `mapstructure:"status"`
+	Action     *sv.ActionConfig  `mapstructure:"action"`
 }
