@@ -7,7 +7,7 @@ import (
 
 	"github.com/core-go/search"
 	sv "github.com/core-go/service"
-	"github.com/core-go/service/model-builder"
+	"github.com/core-go/service/builder"
 )
 
 type EventHandler struct {
@@ -19,7 +19,7 @@ type EventHandler struct {
 func NewEventHandler(eventService EventService, generateId func(context.Context) (string, error), validate func(context.Context, interface{}) ([]sv.ErrorMessage, error), logError func(context.Context, string)) *EventHandler {
 	modelType := reflect.TypeOf(Event{})
 	searchModelType := reflect.TypeOf(EventFilter{})
-	modelBuilder := builder.NewDefaultModelBuilder(generateId, modelType, "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "userId")
+	modelBuilder := builder.NewBuilderWithId(generateId, modelType, "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "userId")
 	searchHandler := search.NewSearchHandler(eventService.Search, modelType, searchModelType, logError, nil)
 	genericHandler := sv.NewHandler(eventService, modelType, modelBuilder, logError, validate)
 	return &EventHandler{GenericHandler: genericHandler, SearchHandler: searchHandler, Service: eventService}

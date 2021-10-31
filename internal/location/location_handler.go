@@ -7,7 +7,7 @@ import (
 
 	"github.com/core-go/search"
 	sv "github.com/core-go/service"
-	"github.com/core-go/service/model-builder"
+	"github.com/core-go/service/builder"
 )
 
 type LocationHandler struct {
@@ -19,7 +19,7 @@ type LocationHandler struct {
 func NewLocationHandler(locationService LocationService, generateId func(context.Context) (string, error), validate func(context.Context, interface{}) ([]sv.ErrorMessage, error), logError func(context.Context, string)) *LocationHandler {
 	modelType := reflect.TypeOf(Location{})
 	searchModelType := reflect.TypeOf(LocationFilter{})
-	modelBuilder := builder.NewDefaultModelBuilder(generateId, modelType, "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "userId")
+	modelBuilder := builder.NewBuilderWithId(generateId, modelType, "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "userId")
 	searchHandler := search.NewSearchHandler(locationService.Search, modelType, searchModelType, logError, nil)
 	genericHandler := sv.NewHandler(locationService, modelType, modelBuilder, logError, validate)
 	return &LocationHandler{GenericHandler: genericHandler, SearchHandler: searchHandler, Service: locationService}

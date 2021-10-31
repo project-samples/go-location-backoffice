@@ -24,7 +24,7 @@ func main() {
 	r := mux.NewRouter()
 	log.Initialize(conf.Log)
 	r.Use(mid.BuildContext)
-	logger := mid.NewStructuredLogger()
+	logger := mid.NewLogger()
 	if log.IsInfoEnable() {
 		r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
 	}
@@ -36,4 +36,8 @@ func main() {
 	}
 	fmt.Println(sv.ServerInfo(conf.Server))
 	http.ListenAndServe(sv.Addr(conf.Server.Port), r)
+	server := sv.CreateServer(conf.Server, r)
+	if er3 := server.ListenAndServe(); er3 != nil {
+		fmt.Println(er3.Error())
+	}
 }
