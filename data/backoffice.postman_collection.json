@@ -71,7 +71,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8080/locations/search?type=coffee&limit=2&sort=name",
+							"raw": "http://localhost:8080/locations/search?type=coffee&limit=10&sort=name&q=K&excluding=5d1d7a85c5e4f320a86ca6b3",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -88,11 +88,19 @@
 								},
 								{
 									"key": "limit",
-									"value": "2"
+									"value": "10"
 								},
 								{
 									"key": "sort",
 									"value": "name"
+								},
+								{
+									"key": "q",
+									"value": "K"
+								},
+								{
+									"key": "excluding",
+									"value": "5d1d7a85c5e4f320a86ca6b3"
 								}
 							]
 						}
@@ -113,7 +121,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"page\": 1,\r\n    \"limit\": 3\r\n}",
+							"raw": "{\r\n    \"page\": 1,\r\n    \"limit\": 3,\r\n    \"q\": \"K\",\r\n    \"type\": \"coffee\",\r\n    \"excluding\": [\"5d1d7a85c5e4f320a86ca6b3\"]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -973,6 +981,327 @@
 							"path": [
 								"bookables",
 								"5d1f15ac96988a1270775480"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "tour",
+			"item": [
+				{
+					"name": "get all tours",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search tours",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours/search?limit=2&sort=id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours",
+								"search"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "2"
+								},
+								{
+									"key": "sort",
+									"value": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search tours",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"page\": 1,\r\n    \"limit\": 3\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours/search",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get tour",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours/5d1b1cbed07abf0554be482d",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours",
+								"5d1b1cbed07abf0554be482d"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create tour",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"5d1b1cbed07abf0554be482d\",\r\n    \"startTime\": \"2019-07-01T17:00:00.000Z\",\r\n    \"endTime\": \"2019-07-04T17:00:00.000Z\",\r\n    \"locations\": [\r\n        \"5d146cbffbdf2b1d30742262\",\r\n        \"5d146eac0301a21d30408424\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update tour",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"5d1b1cbed07abf0554be482d\",\n    \"startTime\": \"2019-07-01T17:00:00.000Z\",\n    \"endTime\": \"2019-07-04T17:00:00.000Z\",\n    \"locations\": [\n        \"5d146cbffbdf2b1d30742262\",\n        \"5d146eac0301a21d30408424\"\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours/5d1b1cbed07abf0554be482d",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours",
+								"5d1b1cbed07abf0554be482d"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "patch tour",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"5d1b1cbed07abf0554be482d\",\n    \"startTime\": \"2019-07-01T17:00:00.000Z\",\n    \"endTime\": \"2019-07-04T17:00:00.000Z\",\n    \"locations\": [\n        \"5d146cbffbdf2b1d30742262\",\n        \"5d146eac0301a21d30408424\"\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours/5d1b1cbed07abf0554be482d",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours",
+								"5d1b1cbed07abf0554be482d"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete tour",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im54a2hhbmhAdG1hLmNvbS52biIsImV4cCI6MTYxNTUzODk4MCwiaWF0IjoxNjE1NDUyNTgwLCJpcCI6Ijo6MSIsInJvbGVJZCI6Iml0X3N1cHBvcnQiLCJ1c2VySWQiOiJLVE0wMDE5MCIsInVzZXJuYW1lIjoia2hhbmgubiJ9.wEN5cR4ROPbqQwX5KX7lH_lUZioq3XR4q1fZyBhlGIc"
+							},
+							{
+								"key": "",
+								"type": "text",
+								"value": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tours/5d1b1cbed07abf0554be482d",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tours",
+								"5d1b1cbed07abf0554be482d"
 							]
 						}
 					},
