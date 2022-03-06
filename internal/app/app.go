@@ -66,8 +66,8 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	tourType := reflect.TypeOf(tour.Tour{})
 	tourMapper := geo.NewMapper(tourType)
-	tourQueryBuilder := query.NewBuilder(tourType)
-	tourSearchBuilder := mongo.NewSearchBuilder(db, "tour", tourQueryBuilder.BuildQuery, search.GetSort, tourMapper.DbToModel)
+	tourQuery := query.UseQuery(tourType)
+	tourSearchBuilder := mongo.NewSearchBuilder(db, "tour", tourQuery, search.GetSort, tourMapper.DbToModel)
 	tourRepository := mongo.NewRepository(db, "tour", tourType, tourMapper)
 	tourService := tour.NewTourService(tourRepository)
 	tourHandler := tour.NewTourHandler(tourSearchBuilder.Search, tourService, Generate, status, logError, validator.Validate, root.Tracking, &action, nil)
