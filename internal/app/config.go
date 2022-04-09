@@ -6,10 +6,12 @@ import (
 	"github.com/core-go/mongo"
 	sv "github.com/core-go/service"
 	"github.com/core-go/service/builder"
+	"github.com/core-go/service/cors"
 )
 
-type Root struct {
+type Config struct {
 	Server     sv.ServerConf          `mapstructure:"server"`
+	Allow      cors.AllowConfig       `mapstructure:"allow"`
 	Mongo      mongo.MongoConfig      `mapstructure:"mongo"`
 	Log        log.Config             `mapstructure:"log"`
 	MiddleWare mid.LogConfig          `mapstructure:"middleware"`

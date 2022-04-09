@@ -3,22 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-
 	"github.com/core-go/config"
 	"github.com/core-go/log"
 	mid "github.com/core-go/log/middleware"
 	sv "github.com/core-go/service"
+	"github.com/core-go/service/cors"
 	"github.com/gorilla/mux"
 
 	"go-service/internal/app"
 )
 
 func main() {
-	var conf app.Root
-	er1 := config.Load(&conf, "configs/config")
-	if er1 != nil {
-		panic(er1)
+	var conf app.Config
+	err := config.Load(&conf, "configs/config")
+	if err != nil {
+		panic(err)
 	}
 
 	r := mux.NewRouter()
@@ -30,14 +29,12 @@ func main() {
 	}
 	r.Use(mid.Recover(log.ErrorMsg))
 
-	er2 := app.Route(r, context.Background(), conf)
-	if er2 != nil {
-		panic(er2)
+	err = app.Route(r, context.Background(), conf)
+	if err != nil {
+		panic(err)
 	}
 	fmt.Println(sv.ServerInfo(conf.Server))
-	http.ListenAndServe(sv.Addr(conf.Server.Port), r)
-	server := sv.CreateServer(conf.Server, r)
-	if er3 := server.ListenAndServe(); er3 != nil {
-		fmt.Println(er3.Error())
-	}
+	c := cors.New(conf.Allow)
+	handler := c.Handler(r)
+	sv.StartServer(conf.Server, handler)
 }
