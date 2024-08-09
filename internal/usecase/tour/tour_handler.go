@@ -1,73 +1,153 @@
 package tour
 
 import (
-	"context"
-	"github.com/core-go/search"
-	sv "github.com/core-go/service"
-	"github.com/core-go/service/builder"
+	"fmt"
 	"net/http"
 	"reflect"
+
+	"github.com/core-go/core"
+	hdl "github.com/core-go/core/handler"
+	b "github.com/core-go/core/handler/builder"
+	v "github.com/core-go/core/validator"
+	search "github.com/core-go/search/handler"
 )
 
-type TourHandler interface {
-	Search(w http.ResponseWriter, r *http.Request)
-	Load(w http.ResponseWriter, r *http.Request)
-	Create(w http.ResponseWriter, r *http.Request)
-	Update(w http.ResponseWriter, r *http.Request)
-	Patch(w http.ResponseWriter, r *http.Request)
-	Delete(w http.ResponseWriter, r *http.Request)
+func NewTourHandler(
+	find search.Search[Tour, *TourFilter],
+	tourService TourService,
+	logError core.Log,
+	validate v.Validate[*Tour],
+	tracking b.TrackingConfig,
+	writeLog core.WriteLog,
+	action *core.ActionConfig,
+) *TourHandler {
+	tourType := reflect.TypeOf(Tour{})
+	builder := b.NewBuilderByConfig[Tour](nil, tracking)
+	params := core.CreateParams(tourType, logError, action, writeLog)
+	searchHandler := search.NewSearchHandler[Tour, *TourFilter](find, logError, nil)
+	return &TourHandler{SearchHandler: searchHandler, service: tourService, validate: validate, builder: builder, Params: params}
 }
 
-func NewTourHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service TourService, generateId func(context.Context) (string, error), status sv.StatusConfig, logError func(context.Context, string), validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error), tracking builder.TrackingConfig, action *sv.ActionConfig, writeLog func(context.Context, string, string, bool, string) error) TourHandler {
-	searchModelType := reflect.TypeOf(TourFilter{})
-	modelType := reflect.TypeOf(Tour{})
-	builder := builder.NewBuilderWithIdAndConfig(generateId, modelType, tracking)
-	patchHandler, params := sv.CreatePatchAndParams(modelType, &status, logError, service.Patch, validate, builder.Patch, action, writeLog)
-	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, params.Log)
-	return &tourHandler{service: service, builder: builder, PatchHandler: patchHandler, SearchHandler: searchHandler, Params: params}
-}
-
-type tourHandler struct {
+type TourHandler struct {
 	service TourService
-	builder sv.Builder
-	*sv.PatchHandler
-	*search.SearchHandler
-	*sv.Params
+	*search.SearchHandler[Tour, *TourFilter]
+	*core.Params
+	validate v.Validate[*Tour]
+	builder  hdl.Builder[Tour]
 }
 
-func (h *tourHandler) Load(w http.ResponseWriter, r *http.Request) {
-	id := sv.GetRequiredParam(w, r)
+func (h *TourHandler) Load(w http.ResponseWriter, r *http.Request) {
+	id := core.GetRequiredParam(w, r)
 	if len(id) > 0 {
-		result, err := h.service.Load(r.Context(), id)
-		sv.RespondModel(w, r, result, err, h.Error, nil)
-	}
-}
-func (h *tourHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var tour Tour
-	er1 := sv.Decode(w, r, &tour, h.builder.Create)
-	if er1 == nil {
-		errors, er2 := h.Validate(r.Context(), &tour)
-		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Create) {
-			result, er3 := h.service.Create(r.Context(), &tour)
-			sv.AfterCreated(w, r, &tour, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Create)
+		tour, err := h.service.Load(r.Context(), id)
+		if err != nil {
+			h.Error(r.Context(), err.Error())
+			http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+		if tour == nil {
+			core.JSON(w, http.StatusNotFound, tour)
+		} else {
+			core.JSON(w, http.StatusOK, tour)
 		}
 	}
 }
-func (h *tourHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *TourHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var tour Tour
-	er1 := sv.DecodeAndCheckId(w, r, &tour, h.Keys, h.Indexes, h.builder.Update)
+	er1 := hdl.Decode(w, r, &tour, h.builder.Create)
 	if er1 == nil {
-		errors, er2 := h.Validate(r.Context(), &tour)
-		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Update) {
-			result, er3 := h.service.Update(r.Context(), &tour)
-			sv.HandleResult(w, r, &tour, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Update)
+		errors, er2 := h.validate(r.Context(), &tour)
+		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {
+			res, er3 := h.service.Create(r.Context(), &tour)
+			if er3 != nil {
+				h.Error(r.Context(), er3.Error())
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, er3.Error())
+				http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+				return
+			}
+
+			if res > 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Update, true, fmt.Sprintf("created '%s'", tour.Id))
+				core.JSON(w, http.StatusCreated, res)
+			} else {
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, fmt.Sprintf("conflict '%s'", tour.Id))
+				core.JSON(w, http.StatusConflict, res)
+			}
 		}
 	}
 }
-func (h *tourHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := sv.GetRequiredParam(w, r)
+func (h *TourHandler) Update(w http.ResponseWriter, r *http.Request) {
+	tour, err := hdl.DecodeAndCheckId[Tour](w, r, h.Keys, h.Indexes, h.builder.Update)
+	if err == nil {
+		errors, err := h.validate(r.Context(), &tour)
+		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Update) {
+			res, err := h.service.Update(r.Context(), &tour)
+			if err != nil {
+				h.Error(r.Context(), err.Error())
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, err.Error())
+				http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+				return
+			}
+
+			if res > 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Update, true, fmt.Sprintf("%s '%s'", h.Action.Update, tour.Id))
+				core.JSON(w, http.StatusOK, tour)
+			} else if res == 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, fmt.Sprintf("not found '%s'", tour.Id))
+				core.JSON(w, http.StatusNotFound, res)
+			} else {
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, fmt.Sprintf("conflict '%s'", tour.Id))
+				core.JSON(w, http.StatusConflict, res)
+			}
+		}
+	}
+}
+func (h *TourHandler) Patch(w http.ResponseWriter, r *http.Request) {
+	r, tour, jsonTour, err := hdl.BuildMapAndCheckId[Tour](w, r, h.Keys, h.Indexes, h.builder.Update)
+	if err == nil {
+		errors, err := h.validate(r.Context(), &tour)
+		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Patch) {
+			res, err := h.service.Patch(r.Context(), jsonTour)
+			if err != nil {
+				h.Error(r.Context(), err.Error())
+				h.Log(r.Context(), h.Resource, h.Action.Patch, false, err.Error())
+				http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+				return
+			}
+
+			if res > 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Patch, true, fmt.Sprintf("%s '%s'", h.Action.Patch, tour.Id))
+				core.JSON(w, http.StatusOK, res)
+			} else if res == 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Patch, false, fmt.Sprintf("not found '%s'", tour.Id))
+				core.JSON(w, http.StatusNotFound, res)
+			} else {
+				h.Log(r.Context(), h.Resource, h.Action.Patch, false, fmt.Sprintf("conflict '%s'", tour.Id))
+				core.JSON(w, http.StatusConflict, res)
+			}
+		}
+	}
+}
+func (h *TourHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id := core.GetRequiredParam(w, r)
 	if len(id) > 0 {
-		result, err := h.service.Delete(r.Context(), id)
-		sv.HandleDelete(w, r, result, err, h.Error, h.Log, h.Resource, h.Action.Delete)
+		res, err := h.service.Delete(r.Context(), id)
+		if err != nil {
+			h.Error(r.Context(), err.Error())
+			h.Log(r.Context(), h.Resource, h.Action.Delete, false, err.Error())
+			http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+
+		if res > 0 {
+			h.Log(r.Context(), h.Resource, h.Action.Delete, true, fmt.Sprintf("%s '%s'", h.Action.Delete, id))
+			core.JSON(w, http.StatusOK, res)
+		} else if res == 0 {
+			h.Log(r.Context(), h.Resource, h.Action.Delete, false, fmt.Sprintf("not found '%s'", id))
+			core.JSON(w, http.StatusNotFound, res)
+		} else {
+			h.Log(r.Context(), h.Resource, h.Action.Delete, false, fmt.Sprintf("conflict '%s'", id))
+			core.JSON(w, http.StatusConflict, res)
+		}
 	}
 }

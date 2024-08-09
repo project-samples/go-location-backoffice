@@ -1,73 +1,153 @@
 package bookable
 
 import (
-	"context"
-	"github.com/core-go/search"
-	sv "github.com/core-go/service"
-	"github.com/core-go/service/builder"
+	"fmt"
 	"net/http"
 	"reflect"
+
+	"github.com/core-go/core"
+	hdl "github.com/core-go/core/handler"
+	b "github.com/core-go/core/handler/builder"
+	v "github.com/core-go/core/validator"
+	search "github.com/core-go/search/handler"
 )
 
-type BookableHandler interface {
-	Search(w http.ResponseWriter, r *http.Request)
-	Load(w http.ResponseWriter, r *http.Request)
-	Create(w http.ResponseWriter, r *http.Request)
-	Update(w http.ResponseWriter, r *http.Request)
-	Patch(w http.ResponseWriter, r *http.Request)
-	Delete(w http.ResponseWriter, r *http.Request)
+func NewBookableHandler(
+	find search.Search[Bookable, *BookableFilter],
+	bookableService BookableService,
+	logError core.Log,
+	validate v.Validate[*Bookable],
+	tracking b.TrackingConfig,
+	writeLog core.WriteLog,
+	action *core.ActionConfig,
+) *BookableHandler {
+	bookableType := reflect.TypeOf(Bookable{})
+	builder := b.NewBuilderByConfig[Bookable](nil, tracking)
+	params := core.CreateParams(bookableType, logError, action, writeLog)
+	searchHandler := search.NewSearchHandler[Bookable, *BookableFilter](find, logError, nil)
+	return &BookableHandler{SearchHandler: searchHandler, service: bookableService, validate: validate, builder: builder, Params: params}
 }
 
-func NewBookableHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service BookableService, generateId func(context.Context) (string, error), status sv.StatusConfig, logError func(context.Context, string), validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error), tracking builder.TrackingConfig, action *sv.ActionConfig, writeLog func(context.Context, string, string, bool, string) error) BookableHandler {
-	searchModelType := reflect.TypeOf(BookableFilter{})
-	modelType := reflect.TypeOf(Bookable{})
-	builder := builder.NewBuilderWithIdAndConfig(generateId, modelType, tracking)
-	patchHandler, params := sv.CreatePatchAndParams(modelType, &status, logError, service.Patch, validate, builder.Patch, action, writeLog)
-	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, params.Log)
-	return &bookableHandler{service: service, builder: builder, PatchHandler: patchHandler, SearchHandler: searchHandler, Params: params}
-}
-
-type bookableHandler struct {
+type BookableHandler struct {
 	service BookableService
-	builder sv.Builder
-	*sv.PatchHandler
-	*search.SearchHandler
-	*sv.Params
+	*search.SearchHandler[Bookable, *BookableFilter]
+	*core.Params
+	validate v.Validate[*Bookable]
+	builder  hdl.Builder[Bookable]
 }
 
-func (h *bookableHandler) Load(w http.ResponseWriter, r *http.Request) {
-	id := sv.GetRequiredParam(w, r)
+func (h *BookableHandler) Load(w http.ResponseWriter, r *http.Request) {
+	id := core.GetRequiredParam(w, r)
 	if len(id) > 0 {
-		result, err := h.service.Load(r.Context(), id)
-		sv.RespondModel(w, r, result, err, h.Error, nil)
-	}
-}
-func (h *bookableHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var bookable Bookable
-	er1 := sv.Decode(w, r, &bookable, h.builder.Create)
-	if er1 == nil {
-		errors, er2 := h.Validate(r.Context(), &bookable)
-		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Create) {
-			result, er3 := h.service.Create(r.Context(), &bookable)
-			sv.AfterCreated(w, r, &bookable, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Create)
+		bookable, err := h.service.Load(r.Context(), id)
+		if err != nil {
+			h.Error(r.Context(), err.Error())
+			http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+		if bookable == nil {
+			core.JSON(w, http.StatusNotFound, bookable)
+		} else {
+			core.JSON(w, http.StatusOK, bookable)
 		}
 	}
 }
-func (h *bookableHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *BookableHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var bookable Bookable
-	er1 := sv.DecodeAndCheckId(w, r, &bookable, h.Keys, h.Indexes, h.builder.Update)
+	er1 := hdl.Decode(w, r, &bookable, h.builder.Create)
 	if er1 == nil {
-		errors, er2 := h.Validate(r.Context(), &bookable)
-		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Update) {
-			result, er3 := h.service.Update(r.Context(), &bookable)
-			sv.HandleResult(w, r, &bookable, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Update)
+		errors, er2 := h.validate(r.Context(), &bookable)
+		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {
+			res, er3 := h.service.Create(r.Context(), &bookable)
+			if er3 != nil {
+				h.Error(r.Context(), er3.Error())
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, er3.Error())
+				http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+				return
+			}
+
+			if res > 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Update, true, fmt.Sprintf("created '%s'", bookable.Id))
+				core.JSON(w, http.StatusCreated, res)
+			} else {
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, fmt.Sprintf("conflict '%s'", bookable.Id))
+				core.JSON(w, http.StatusConflict, res)
+			}
 		}
 	}
 }
-func (h *bookableHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := sv.GetRequiredParam(w, r)
+func (h *BookableHandler) Update(w http.ResponseWriter, r *http.Request) {
+	bookable, err := hdl.DecodeAndCheckId[Bookable](w, r, h.Keys, h.Indexes, h.builder.Update)
+	if err == nil {
+		errors, err := h.validate(r.Context(), &bookable)
+		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Update) {
+			res, err := h.service.Update(r.Context(), &bookable)
+			if err != nil {
+				h.Error(r.Context(), err.Error())
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, err.Error())
+				http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+				return
+			}
+
+			if res > 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Update, true, fmt.Sprintf("%s '%s'", h.Action.Update, bookable.Id))
+				core.JSON(w, http.StatusOK, bookable)
+			} else if res == 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, fmt.Sprintf("not found '%s'", bookable.Id))
+				core.JSON(w, http.StatusNotFound, res)
+			} else {
+				h.Log(r.Context(), h.Resource, h.Action.Update, false, fmt.Sprintf("conflict '%s'", bookable.Id))
+				core.JSON(w, http.StatusConflict, res)
+			}
+		}
+	}
+}
+func (h *BookableHandler) Patch(w http.ResponseWriter, r *http.Request) {
+	r, bookable, jsonBookable, err := hdl.BuildMapAndCheckId[Bookable](w, r, h.Keys, h.Indexes, h.builder.Update)
+	if err == nil {
+		errors, err := h.validate(r.Context(), &bookable)
+		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Patch) {
+			res, err := h.service.Patch(r.Context(), jsonBookable)
+			if err != nil {
+				h.Error(r.Context(), err.Error())
+				h.Log(r.Context(), h.Resource, h.Action.Patch, false, err.Error())
+				http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+				return
+			}
+
+			if res > 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Patch, true, fmt.Sprintf("%s '%s'", h.Action.Patch, bookable.Id))
+				core.JSON(w, http.StatusOK, res)
+			} else if res == 0 {
+				h.Log(r.Context(), h.Resource, h.Action.Patch, false, fmt.Sprintf("not found '%s'", bookable.Id))
+				core.JSON(w, http.StatusNotFound, res)
+			} else {
+				h.Log(r.Context(), h.Resource, h.Action.Patch, false, fmt.Sprintf("conflict '%s'", bookable.Id))
+				core.JSON(w, http.StatusConflict, res)
+			}
+		}
+	}
+}
+func (h *BookableHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id := core.GetRequiredParam(w, r)
 	if len(id) > 0 {
-		result, err := h.service.Delete(r.Context(), id)
-		sv.HandleDelete(w, r, result, err, h.Error, h.Log, h.Resource, h.Action.Delete)
+		res, err := h.service.Delete(r.Context(), id)
+		if err != nil {
+			h.Error(r.Context(), err.Error())
+			h.Log(r.Context(), h.Resource, h.Action.Delete, false, err.Error())
+			http.Error(w, core.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+
+		if res > 0 {
+			h.Log(r.Context(), h.Resource, h.Action.Delete, true, fmt.Sprintf("%s '%s'", h.Action.Delete, id))
+			core.JSON(w, http.StatusOK, res)
+		} else if res == 0 {
+			h.Log(r.Context(), h.Resource, h.Action.Delete, false, fmt.Sprintf("not found '%s'", id))
+			core.JSON(w, http.StatusNotFound, res)
+		} else {
+			h.Log(r.Context(), h.Resource, h.Action.Delete, false, fmt.Sprintf("conflict '%s'", id))
+			core.JSON(w, http.StatusConflict, res)
+		}
 	}
 }

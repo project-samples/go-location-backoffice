@@ -3,38 +3,39 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/core-go/config"
-	"github.com/core-go/log"
+	"github.com/core-go/core/cors"
+	svr "github.com/core-go/core/server"
 	mid "github.com/core-go/log/middleware"
-	sv "github.com/core-go/service"
-	"github.com/core-go/service/cors"
+	"github.com/core-go/log/zap"
 	"github.com/gorilla/mux"
 
 	"go-service/internal/app"
 )
 
 func main() {
-	var conf app.Config
-	err := config.Load(&conf, "configs/config")
+	var cfg app.Config
+	err := config.Load(&cfg, "configs/config")
 	if err != nil {
 		panic(err)
 	}
 
 	r := mux.NewRouter()
-	log.Initialize(conf.Log)
+	log.Initialize(cfg.Log)
 	r.Use(mid.BuildContext)
 	logger := mid.NewLogger()
 	if log.IsInfoEnable() {
-		r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
+		r.Use(mid.Logger(cfg.MiddleWare, log.InfoFields, logger))
 	}
 	r.Use(mid.Recover(log.ErrorMsg))
 
-	err = app.Route(r, context.Background(), conf)
+	err = app.Route(r, context.Background(), cfg)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(sv.ServerInfo(conf.Server))
-	c := cors.New(conf.Allow)
+	fmt.Println(svr.ServerInfo(cfg.Server))
+	c := cors.New(cfg.Allow)
 	handler := c.Handler(r)
-	sv.StartServer(conf.Server, handler)
+	svr.StartServer(cfg.Server, handler)
 }

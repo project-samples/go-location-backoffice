@@ -11,7 +11,7 @@ allow:
   headers: Access-Control-Allow-Headers,Authorization,Origin,Accept,X-Requested-With,Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers
 
 mongo:
-  uri: mongodb://localhost:27017
+  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
   database: location
 
 log:

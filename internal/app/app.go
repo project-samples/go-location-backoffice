@@ -2,17 +2,14 @@ package app
 
 import (
 	"context"
-	"github.com/core-go/health"
-	"github.com/core-go/log"
-	"github.com/core-go/mongo"
-	"github.com/core-go/mongo/geo"
-	"github.com/core-go/search"
-	"github.com/core-go/search/mongo"
-	sv "github.com/core-go/service"
-	v "github.com/core-go/service/v10"
-	"github.com/teris-io/shortid"
-	"reflect"
 
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/core-go/health"
+	hm "github.com/core-go/health/mongo"
+	"github.com/core-go/log/zap"
+	"github.com/teris-io/shortid"
 	"go-service/internal/usecase/bookable"
 	"go-service/internal/usecase/event"
 	"go-service/internal/usecase/location"
@@ -20,64 +17,44 @@ import (
 )
 
 type ApplicationContext struct {
-	HealthHandler   *health.Handler
-	LocationHandler location.LocationHandler
-	EventHandler    event.EventHandler
-	BookableHandler bookable.BookableHandler
-	TourHandler     tour.TourHandler
+	Health   *health.Handler
+	Location location.LocationTransport
+	Event    event.EventTransport
+	Bookable bookable.BookableTransport
+	Tour     tour.TourTransport
 }
 
-func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
-	db, err := mongo.Setup(ctx, conf.Mongo)
+func NewApp(ctx context.Context, cfg Config) (*ApplicationContext, error) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Mongo.Uri))
 	if err != nil {
 		return nil, err
 	}
-	logError := log.ErrorMsg
-	status := sv.InitializeStatus(conf.Status)
-	action := sv.InitializeAction(conf.Action)
-	validator := v.NewValidator()
+	db := client.Database(cfg.Mongo.Database)
+	logError := log.LogError
 
-	mongoChecker := mongo.NewHealthChecker(db)
+	mongoChecker := hm.NewHealthChecker(client)
 	healthHandler := health.NewHandler(mongoChecker)
 
-	locationType := reflect.TypeOf(location.Location{})
-	locationMapper := geo.NewMapper(locationType)
-	locationQuery := query.UseQuery(locationType)
-	locationSearchBuilder := mongo.NewSearchBuilder(db, "location", locationQuery, search.GetSort, locationMapper.DbToModel)
-	locationRepository := mongo.NewRepository(db, "location", locationType, locationMapper)
-	locationService := location.NewLocationService(locationRepository)
-	locationHandler := location.NewLocationHandler(locationSearchBuilder.Search, locationService, Generate, status, logError, validator.Validate, conf.Tracking, &action, nil)
-
-	eventType := reflect.TypeOf(event.Event{})
-	eventMapper := geo.NewMapper(eventType)
-	eventQuery := query.UseQuery(eventType)
-	eventSearchBuilder := mongo.NewSearchBuilder(db, "event", eventQuery, search.GetSort, eventMapper.DbToModel)
-	eventRepository := mongo.NewRepository(db, "event", eventType, eventMapper)
-	eventService := event.NewEventService(eventRepository)
-	eventHandler := event.NewEventHandler(eventSearchBuilder.Search, eventService, Generate, status, logError, validator.Validate, conf.Tracking, &action, nil)
-
-	bookableType := reflect.TypeOf(bookable.Bookable{})
-	bookableMapper := geo.NewMapper(bookableType)
-	bookableQuery := query.UseQuery(bookableType)
-	bookableSearchBuilder := mongo.NewSearchBuilder(db, "bookable", bookableQuery, search.GetSort, bookableMapper.DbToModel)
-	bookableRepository := mongo.NewRepository(db, "bookable", bookableType, bookableMapper)
-	bookableService := bookable.NewBookableService(bookableRepository)
-	bookableHandler := bookable.NewBookableHandler(bookableSearchBuilder.Search, bookableService, Generate, status, logError, validator.Validate, conf.Tracking, &action, nil)
-
-	tourType := reflect.TypeOf(tour.Tour{})
-	tourMapper := geo.NewMapper(tourType)
-	tourQuery := query.UseQuery(tourType)
-	tourSearchBuilder := mongo.NewSearchBuilder(db, "tour", tourQuery, search.GetSort, tourMapper.DbToModel)
-	tourRepository := mongo.NewRepository(db, "tour", tourType, tourMapper)
-	tourService := tour.NewTourService(tourRepository)
-	tourHandler := tour.NewTourHandler(tourSearchBuilder.Search, tourService, Generate, status, logError, validator.Validate, conf.Tracking, &action, nil)
+	locationHandler, err := location.NewLocationTransport(db, logError, cfg.Tracking, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	eventHandler, err := event.NewEventTransport(db, logError, cfg.Tracking, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	bookableHandler, err := bookable.NewBookableTransport(db, logError, cfg.Tracking, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	tourHandler, err := tour.NewTourTransport(db, logError, cfg.Tracking, nil, nil)
 
 	return &ApplicationContext{
-		HealthHandler:   healthHandler,
-		LocationHandler: locationHandler,
-		EventHandler:    eventHandler,
-		BookableHandler: bookableHandler,
-		TourHandler:     tourHandler,
+		Health:   healthHandler,
+		Location: locationHandler,
+		Event:    eventHandler,
+		Bookable: bookableHandler,
+		Tour:     tourHandler,
 	}, nil
 }
 

@@ -1,45 +1,35 @@
 package location
 
-import (
-	"context"
-
-	sv "github.com/core-go/service"
-)
+import "context"
 
 type LocationService interface {
 	Load(ctx context.Context, id string) (*Location, error)
-	Create(ctx context.Context, Location *Location) (int64, error)
-	Update(ctx context.Context, Location *Location) (int64, error)
-	Patch(ctx context.Context, Location map[string]interface{}) (int64, error)
+	Create(ctx context.Context, location *Location) (int64, error)
+	Update(ctx context.Context, location *Location) (int64, error)
+	Patch(ctx context.Context, location map[string]interface{}) (int64, error)
 	Delete(ctx context.Context, id string) (int64, error)
 }
 
-func NewLocationService(repository sv.Repository) LocationService {
-	return &locationService{repository: repository}
+func NewLocationService(repository LocationRepository) LocationService {
+	return &LocationUseCase{repository: repository}
 }
 
-type locationService struct {
-	repository sv.Repository
+type LocationUseCase struct {
+	repository LocationRepository
 }
 
-func (s *locationService) Load(ctx context.Context, id string) (*Location, error) {
-	var Location Location
-	ok, err := s.repository.LoadAndDecode(ctx, id, &Location)
-	if !ok {
-		return nil, err
-	} else {
-		return &Location, err
-	}
+func (s *LocationUseCase) Load(ctx context.Context, id string) (*Location, error) {
+	return s.repository.Load(ctx, id)
 }
-func (s *locationService) Create(ctx context.Context, Location *Location) (int64, error) {
-	return s.repository.Insert(ctx, Location)
+func (s *LocationUseCase) Create(ctx context.Context, Location *Location) (int64, error) {
+	return s.repository.Create(ctx, Location)
 }
-func (s *locationService) Update(ctx context.Context, Location *Location) (int64, error) {
+func (s *LocationUseCase) Update(ctx context.Context, Location *Location) (int64, error) {
 	return s.repository.Update(ctx, Location)
 }
-func (s *locationService) Patch(ctx context.Context, Location map[string]interface{}) (int64, error) {
+func (s *LocationUseCase) Patch(ctx context.Context, Location map[string]interface{}) (int64, error) {
 	return s.repository.Patch(ctx, Location)
 }
-func (s *locationService) Delete(ctx context.Context, id string) (int64, error) {
+func (s *LocationUseCase) Delete(ctx context.Context, id string) (int64, error) {
 	return s.repository.Delete(ctx, id)
 }

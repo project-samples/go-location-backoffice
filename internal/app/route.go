@@ -2,7 +2,8 @@ package app
 
 import (
 	"context"
-	. "github.com/core-go/service"
+
+	. "github.com/core-go/core/constants"
 	"github.com/gorilla/mux"
 )
 
@@ -11,10 +12,10 @@ func Route(r *mux.Router, ctx context.Context, conf Config) error {
 	if err != nil {
 		return err
 	}
-	r.HandleFunc("/health", app.HealthHandler.Check).Methods(GET)
+	r.HandleFunc("/health", app.Health.Check).Methods(GET)
 
 	locationPath := "/locations"
-	location := app.LocationHandler
+	location := app.Location
 	// r.HandleFunc(locationPath, location.GetAll).Methods(GET)
 	r.HandleFunc(locationPath+"/search", location.Search).Methods(GET, POST)
 	r.HandleFunc(locationPath+"/{id}", location.Load).Methods(GET)
@@ -24,7 +25,7 @@ func Route(r *mux.Router, ctx context.Context, conf Config) error {
 	r.HandleFunc(locationPath+"/{id}", location.Delete).Methods(DELETE)
 
 	eventPath := "/events"
-	event := app.EventHandler
+	event := app.Event
 	// r.HandleFunc(eventPath, event.GetAll).Methods(GET)
 	r.HandleFunc(eventPath+"/search", event.Search).Methods(GET, POST)
 	r.HandleFunc(eventPath+"/{id}", event.Load).Methods(GET)
@@ -34,7 +35,7 @@ func Route(r *mux.Router, ctx context.Context, conf Config) error {
 	r.HandleFunc(eventPath+"/{id}", event.Delete).Methods(DELETE)
 
 	bookablePath := "/bookables"
-	bookable := app.BookableHandler
+	bookable := app.Bookable
 	// r.HandleFunc(bookablePath, bookable.GetAll).Methods(GET)
 	r.HandleFunc(bookablePath+"/search", bookable.Search).Methods(GET, POST)
 	r.HandleFunc(bookablePath+"/{id}", bookable.Load).Methods(GET)
@@ -44,7 +45,7 @@ func Route(r *mux.Router, ctx context.Context, conf Config) error {
 	r.HandleFunc(bookablePath+"/{id}", bookable.Delete).Methods(DELETE)
 
 	tourPath := "/tours"
-	tour := app.BookableHandler
+	tour := app.Bookable
 	// r.HandleFunc(tourPath, tour.GetAll).Methods(GET)
 	r.HandleFunc(tourPath+"/search", tour.Search).Methods(GET, POST)
 	r.HandleFunc(tourPath+"/{id}", tour.Load).Methods(GET)
