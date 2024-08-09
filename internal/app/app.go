@@ -10,10 +10,11 @@ import (
 	hm "github.com/core-go/health/mongo"
 	"github.com/core-go/log/zap"
 	"github.com/teris-io/shortid"
-	"go-service/internal/usecase/bookable"
-	"go-service/internal/usecase/event"
-	"go-service/internal/usecase/location"
-	"go-service/internal/usecase/tour"
+
+	"go-service/internal/bookable"
+	"go-service/internal/event"
+	"go-service/internal/location"
+	"go-service/internal/tour"
 )
 
 type ApplicationContext struct {
