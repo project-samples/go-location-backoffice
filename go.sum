@@ -2,8 +2,8 @@ github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLj
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/core-go/config v1.0.1 h1:ZIfpd+rfyajyePVxe7IKwGtgcJZ7lsbewTzVgfgMZMk=
 github.com/core-go/config v1.0.1/go.mod h1:fHfbCGBNq6FMQneRMtDg8tkTwut3KmmYxcjgbW37+As=
-github.com/core-go/core v0.7.0 h1:YeSMm13Qejtvrok28zD9GKhXl1sj4LrRxog7x1dGvms=
-github.com/core-go/core v0.7.0/go.mod h1:bfN1xcZGpu0cnA6qhv/JyTkFHnk9IJgqd/JnevDxGkA=
+github.com/core-go/core v0.7.1 h1:eqI3W08FAtJOD0I4Mbfaw+f2myjro8v+m2X0tFfBHHY=
+github.com/core-go/core v0.7.1/go.mod h1:6clsy/zJTzOZTX14L9bMCxX20uDlJKz+eiVglBYJXLM=
 github.com/core-go/health v1.0.3 h1:gID1D4ISai6FUQkfLAf1cSg8ioxiUJW81OIiQtCJ754=
 github.com/core-go/health v1.0.3/go.mod h1:7J9YQqCPSZW5+5BLVtZPQ/FULyk+LHZgSTnWFdL+oP0=
 github.com/core-go/log v1.0.7 h1:vLm5EnS8/OSwgxK3AcyUeED2sI6rYeE53nn1iTaG2f4=

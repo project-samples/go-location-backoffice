@@ -53,8 +53,7 @@ func (h *LocationHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *LocationHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var location Location
-	er1 := hdl.Decode(w, r, &location, h.builder.Create)
+	location, er1 := hdl.Decode[Location](w, r, &location, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &location)
 		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {

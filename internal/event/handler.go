@@ -53,8 +53,7 @@ func (h *EventHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *EventHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var event Event
-	er1 := hdl.Decode(w, r, &event, h.builder.Create)
+	event, er1 := hdl.Decode[Event](w, r, &event, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &event)
 		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {

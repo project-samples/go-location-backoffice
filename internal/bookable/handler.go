@@ -53,8 +53,7 @@ func (h *BookableHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *BookableHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var bookable Bookable
-	er1 := hdl.Decode(w, r, &bookable, h.builder.Create)
+	bookable, er1 := hdl.Decode[Bookable](w, r, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &bookable)
 		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {

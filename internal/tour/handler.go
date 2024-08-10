@@ -53,8 +53,7 @@ func (h *TourHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *TourHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var tour Tour
-	er1 := hdl.Decode(w, r, &tour, h.builder.Create)
+	tour, er1 := hdl.Decode[Tour](w, r, &tour, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &tour)
 		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {
