@@ -6,9 +6,7 @@ import (
 	"reflect"
 
 	"github.com/core-go/core"
-	hdl "github.com/core-go/core/handler"
-	b "github.com/core-go/core/handler/builder"
-	v "github.com/core-go/core/validator"
+	b "github.com/core-go/core/builder"
 	search "github.com/core-go/search/handler"
 )
 
@@ -16,29 +14,29 @@ func NewEventHandler(
 	find search.Search[Event, *EventFilter],
 	eventService EventService,
 	logError core.Log,
-	validate v.Validate[*Event],
+	validate core.Validate[*Event],
 	tracking b.TrackingConfig,
 	writeLog core.WriteLog,
 	action *core.ActionConfig,
 ) *EventHandler {
 	eventType := reflect.TypeOf(Event{})
 	builder := b.NewBuilderByConfig[Event](nil, tracking)
-	params := core.CreateParams(eventType, logError, action, writeLog)
+	attributes := core.CreateAttributes(eventType, logError, action, writeLog)
 	searchHandler := search.NewSearchHandler[Event, *EventFilter](find, logError, nil)
-	return &EventHandler{SearchHandler: searchHandler, service: eventService, validate: validate, builder: builder, Params: params}
+	return &EventHandler{SearchHandler: searchHandler, service: eventService, validate: validate, builder: builder, Attributes: attributes}
 }
 
 type EventHandler struct {
 	service EventService
 	*search.SearchHandler[Event, *EventFilter]
-	*core.Params
-	validate v.Validate[*Event]
-	builder  hdl.Builder[Event]
+	*core.Attributes
+	validate core.Validate[*Event]
+	builder  core.Builder[Event]
 }
 
 func (h *EventHandler) Load(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		event, err := h.service.Load(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())
@@ -53,10 +51,10 @@ func (h *EventHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *EventHandler) Create(w http.ResponseWriter, r *http.Request) {
-	event, er1 := hdl.Decode[Event](w, r, &event, h.builder.Create)
+	event, er1 := core.Decode[Event](w, r, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &event)
-		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {
+		if !core.HasError(w, r, errors, er2, h.Error, &event, h.Log, h.Resource, h.Action.Create) {
 			res, er3 := h.service.Create(r.Context(), &event)
 			if er3 != nil {
 				h.Error(r.Context(), er3.Error())
@@ -76,10 +74,10 @@ func (h *EventHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *EventHandler) Update(w http.ResponseWriter, r *http.Request) {
-	event, err := hdl.DecodeAndCheckId[Event](w, r, h.Keys, h.Indexes, h.builder.Update)
+	event, err := core.DecodeAndCheckId[Event](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &event)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Update) {
+		if !core.HasError(w, r, errors, err, h.Error, &event, h.Log, h.Resource, h.Action.Update) {
 			res, err := h.service.Update(r.Context(), &event)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -102,10 +100,10 @@ func (h *EventHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *EventHandler) Patch(w http.ResponseWriter, r *http.Request) {
-	r, event, jsonEvent, err := hdl.BuildMapAndCheckId[Event](w, r, h.Keys, h.Indexes, h.builder.Update)
+	r, event, jsonEvent, err := core.BuildMapAndCheckId[Event](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &event)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Patch) {
+		if !core.HasError(w, r, errors, err, h.Error, jsonEvent, h.Log, h.Resource, h.Action.Patch) {
 			res, err := h.service.Patch(r.Context(), jsonEvent)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -128,8 +126,8 @@ func (h *EventHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *EventHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		res, err := h.service.Delete(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())

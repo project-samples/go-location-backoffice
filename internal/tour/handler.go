@@ -6,9 +6,7 @@ import (
 	"reflect"
 
 	"github.com/core-go/core"
-	hdl "github.com/core-go/core/handler"
-	b "github.com/core-go/core/handler/builder"
-	v "github.com/core-go/core/validator"
+	b "github.com/core-go/core/builder"
 	search "github.com/core-go/search/handler"
 )
 
@@ -16,29 +14,29 @@ func NewTourHandler(
 	find search.Search[Tour, *TourFilter],
 	tourService TourService,
 	logError core.Log,
-	validate v.Validate[*Tour],
+	validate core.Validate[*Tour],
 	tracking b.TrackingConfig,
 	writeLog core.WriteLog,
 	action *core.ActionConfig,
 ) *TourHandler {
 	tourType := reflect.TypeOf(Tour{})
 	builder := b.NewBuilderByConfig[Tour](nil, tracking)
-	params := core.CreateParams(tourType, logError, action, writeLog)
+	attributes := core.CreateAttributes(tourType, logError, action, writeLog)
 	searchHandler := search.NewSearchHandler[Tour, *TourFilter](find, logError, nil)
-	return &TourHandler{SearchHandler: searchHandler, service: tourService, validate: validate, builder: builder, Params: params}
+	return &TourHandler{SearchHandler: searchHandler, service: tourService, validate: validate, builder: builder, Attributes: attributes}
 }
 
 type TourHandler struct {
 	service TourService
 	*search.SearchHandler[Tour, *TourFilter]
-	*core.Params
-	validate v.Validate[*Tour]
-	builder  hdl.Builder[Tour]
+	*core.Attributes
+	validate core.Validate[*Tour]
+	builder  core.Builder[Tour]
 }
 
 func (h *TourHandler) Load(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		tour, err := h.service.Load(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())
@@ -53,10 +51,10 @@ func (h *TourHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *TourHandler) Create(w http.ResponseWriter, r *http.Request) {
-	tour, er1 := hdl.Decode[Tour](w, r, &tour, h.builder.Create)
+	tour, er1 := core.Decode[Tour](w, r, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &tour)
-		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {
+		if !core.HasError(w, r, errors, er2, h.Error, &tour, h.Log, h.Resource, h.Action.Create) {
 			res, er3 := h.service.Create(r.Context(), &tour)
 			if er3 != nil {
 				h.Error(r.Context(), er3.Error())
@@ -76,10 +74,10 @@ func (h *TourHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *TourHandler) Update(w http.ResponseWriter, r *http.Request) {
-	tour, err := hdl.DecodeAndCheckId[Tour](w, r, h.Keys, h.Indexes, h.builder.Update)
+	tour, err := core.DecodeAndCheckId[Tour](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &tour)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Update) {
+		if !core.HasError(w, r, errors, err, h.Error, &tour, h.Log, h.Resource, h.Action.Update) {
 			res, err := h.service.Update(r.Context(), &tour)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -102,10 +100,10 @@ func (h *TourHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *TourHandler) Patch(w http.ResponseWriter, r *http.Request) {
-	r, tour, jsonTour, err := hdl.BuildMapAndCheckId[Tour](w, r, h.Keys, h.Indexes, h.builder.Update)
+	r, tour, jsonTour, err := core.BuildMapAndCheckId[Tour](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &tour)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Patch) {
+		if !core.HasError(w, r, errors, err, h.Error, jsonTour, h.Log, h.Resource, h.Action.Patch) {
 			res, err := h.service.Patch(r.Context(), jsonTour)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -128,8 +126,8 @@ func (h *TourHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *TourHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		res, err := h.service.Delete(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())

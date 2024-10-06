@@ -3,7 +3,7 @@ package tour
 import (
 	"context"
 	"github.com/core-go/core"
-	b "github.com/core-go/core/handler/builder"
+	b "github.com/core-go/core/builder"
 	v "github.com/core-go/core/validator"
 	"github.com/core-go/mongo/repository"
 	"github.com/core-go/search"

@@ -6,9 +6,7 @@ import (
 	"reflect"
 
 	"github.com/core-go/core"
-	hdl "github.com/core-go/core/handler"
-	b "github.com/core-go/core/handler/builder"
-	v "github.com/core-go/core/validator"
+	b "github.com/core-go/core/builder"
 	search "github.com/core-go/search/handler"
 )
 
@@ -16,29 +14,29 @@ func NewLocationHandler(
 	find search.Search[Location, *LocationFilter],
 	locationService LocationService,
 	logError core.Log,
-	validate v.Validate[*Location],
+	validate core.Validate[*Location],
 	tracking b.TrackingConfig,
 	writeLog core.WriteLog,
 	action *core.ActionConfig,
 ) *LocationHandler {
 	locationType := reflect.TypeOf(Location{})
 	builder := b.NewBuilderByConfig[Location](nil, tracking)
-	params := core.CreateParams(locationType, logError, action, writeLog)
+	attributes := core.CreateAttributes(locationType, logError, action, writeLog)
 	searchHandler := search.NewSearchHandler[Location, *LocationFilter](find, logError, nil)
-	return &LocationHandler{SearchHandler: searchHandler, service: locationService, validate: validate, builder: builder, Params: params}
+	return &LocationHandler{SearchHandler: searchHandler, service: locationService, validate: validate, builder: builder, Attributes: attributes}
 }
 
 type LocationHandler struct {
 	service LocationService
 	*search.SearchHandler[Location, *LocationFilter]
-	*core.Params
-	validate v.Validate[*Location]
-	builder  hdl.Builder[Location]
+	*core.Attributes
+	validate core.Validate[*Location]
+	builder  core.Builder[Location]
 }
 
 func (h *LocationHandler) Load(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		location, err := h.service.Load(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())
@@ -53,10 +51,10 @@ func (h *LocationHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *LocationHandler) Create(w http.ResponseWriter, r *http.Request) {
-	location, er1 := hdl.Decode[Location](w, r, &location, h.builder.Create)
+	location, er1 := core.Decode[Location](w, r, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &location)
-		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {
+		if !core.HasError(w, r, errors, er2, h.Error, &location, h.Log, h.Resource, h.Action.Create) {
 			res, er3 := h.service.Create(r.Context(), &location)
 			if er3 != nil {
 				h.Error(r.Context(), er3.Error())
@@ -76,10 +74,10 @@ func (h *LocationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *LocationHandler) Update(w http.ResponseWriter, r *http.Request) {
-	location, err := hdl.DecodeAndCheckId[Location](w, r, h.Keys, h.Indexes, h.builder.Update)
+	location, err := core.DecodeAndCheckId[Location](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &location)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Update) {
+		if !core.HasError(w, r, errors, err, h.Error, &location, h.Log, h.Resource, h.Action.Update) {
 			res, err := h.service.Update(r.Context(), &location)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -102,10 +100,10 @@ func (h *LocationHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *LocationHandler) Patch(w http.ResponseWriter, r *http.Request) {
-	r, location, jsonLocation, err := hdl.BuildMapAndCheckId[Location](w, r, h.Keys, h.Indexes, h.builder.Update)
+	r, location, jsonLocation, err := core.BuildMapAndCheckId[Location](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &location)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Patch) {
+		if !core.HasError(w, r, errors, err, h.Error, jsonLocation, h.Log, h.Resource, h.Action.Patch) {
 			res, err := h.service.Patch(r.Context(), jsonLocation)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -128,8 +126,8 @@ func (h *LocationHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *LocationHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		res, err := h.service.Delete(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())

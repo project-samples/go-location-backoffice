@@ -2,8 +2,8 @@ package app
 
 import (
 	"github.com/core-go/core"
+	"github.com/core-go/core/builder"
 	"github.com/core-go/core/cors"
-	"github.com/core-go/core/handler/builder"
 	"github.com/core-go/core/server"
 	mid "github.com/core-go/log/middleware"
 	"github.com/core-go/log/zap"

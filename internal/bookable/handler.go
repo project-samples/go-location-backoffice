@@ -6,9 +6,7 @@ import (
 	"reflect"
 
 	"github.com/core-go/core"
-	hdl "github.com/core-go/core/handler"
-	b "github.com/core-go/core/handler/builder"
-	v "github.com/core-go/core/validator"
+	b "github.com/core-go/core/builder"
 	search "github.com/core-go/search/handler"
 )
 
@@ -16,29 +14,29 @@ func NewBookableHandler(
 	find search.Search[Bookable, *BookableFilter],
 	bookableService BookableService,
 	logError core.Log,
-	validate v.Validate[*Bookable],
+	validate core.Validate[*Bookable],
 	tracking b.TrackingConfig,
 	writeLog core.WriteLog,
 	action *core.ActionConfig,
 ) *BookableHandler {
 	bookableType := reflect.TypeOf(Bookable{})
 	builder := b.NewBuilderByConfig[Bookable](nil, tracking)
-	params := core.CreateParams(bookableType, logError, action, writeLog)
+	attributes := core.CreateAttributes(bookableType, logError, action, writeLog)
 	searchHandler := search.NewSearchHandler[Bookable, *BookableFilter](find, logError, nil)
-	return &BookableHandler{SearchHandler: searchHandler, service: bookableService, validate: validate, builder: builder, Params: params}
+	return &BookableHandler{SearchHandler: searchHandler, service: bookableService, validate: validate, builder: builder, Attributes: attributes}
 }
 
 type BookableHandler struct {
 	service BookableService
 	*search.SearchHandler[Bookable, *BookableFilter]
-	*core.Params
-	validate v.Validate[*Bookable]
-	builder  hdl.Builder[Bookable]
+	*core.Attributes
+	validate core.Validate[*Bookable]
+	builder  core.Builder[Bookable]
 }
 
 func (h *BookableHandler) Load(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		bookable, err := h.service.Load(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())
@@ -53,10 +51,10 @@ func (h *BookableHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *BookableHandler) Create(w http.ResponseWriter, r *http.Request) {
-	bookable, er1 := hdl.Decode[Bookable](w, r, h.builder.Create)
+	bookable, er1 := core.Decode[Bookable](w, r, h.builder.Create)
 	if er1 == nil {
 		errors, er2 := h.validate(r.Context(), &bookable)
-		if !core.HasError(w, r, errors, er2, h.Error, h.Log, h.Resource, h.Action.Create) {
+		if !core.HasError(w, r, errors, er2, h.Error, &bookable, h.Log, h.Resource, h.Action.Create) {
 			res, er3 := h.service.Create(r.Context(), &bookable)
 			if er3 != nil {
 				h.Error(r.Context(), er3.Error())
@@ -76,10 +74,10 @@ func (h *BookableHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *BookableHandler) Update(w http.ResponseWriter, r *http.Request) {
-	bookable, err := hdl.DecodeAndCheckId[Bookable](w, r, h.Keys, h.Indexes, h.builder.Update)
+	bookable, err := core.DecodeAndCheckId[Bookable](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &bookable)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Update) {
+		if !core.HasError(w, r, errors, err, h.Error, &bookable, h.Log, h.Resource, h.Action.Update) {
 			res, err := h.service.Update(r.Context(), &bookable)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -102,10 +100,10 @@ func (h *BookableHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *BookableHandler) Patch(w http.ResponseWriter, r *http.Request) {
-	r, bookable, jsonBookable, err := hdl.BuildMapAndCheckId[Bookable](w, r, h.Keys, h.Indexes, h.builder.Update)
+	r, bookable, jsonBookable, err := core.BuildMapAndCheckId[Bookable](w, r, h.Keys, h.Indexes, h.builder.Update)
 	if err == nil {
 		errors, err := h.validate(r.Context(), &bookable)
-		if !core.HasError(w, r, errors, err, h.Error, h.Log, h.Resource, h.Action.Patch) {
+		if !core.HasError(w, r, errors, err, h.Error, jsonBookable, h.Log, h.Resource, h.Action.Patch) {
 			res, err := h.service.Patch(r.Context(), jsonBookable)
 			if err != nil {
 				h.Error(r.Context(), err.Error())
@@ -128,8 +126,8 @@ func (h *BookableHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *BookableHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := core.GetRequiredParam(w, r)
-	if len(id) > 0 {
+	id, err := core.GetRequiredString(w, r)
+	if err == nil {
 		res, err := h.service.Delete(r.Context(), id)
 		if err != nil {
 			h.Error(r.Context(), err.Error())
